@@ -31,31 +31,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//私钥
-	privateKey, err := crypto.HexToECDSA("*********")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
-	}
-
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	value := big.NewInt(0) // in wei (0 eth)
-	gasPrice, err := client.SuggestGasPrice(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Got gas price: %d\n", gasPrice)
-
 	contractAddress := common.HexToAddress("0xE3bA0072d1da98269133852fba1795419D72BaF4") //签到合约地址
 
 	// 加载合约ABI
@@ -69,6 +44,43 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to pack transfer  %v", err)
 	}
+
+	//私钥
+	privateKey, err := crypto.HexToECDSA("*********")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+	}
+
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+	// 签到操作
+	err = signIn(client, fromAddress, contractAddress, data, privateKey)
+	if err != nil {
+		log.Printf("Failed to sign in: %v", err)
+	} else {
+		log.Println("Successfully signed in!")
+	}
+
+}
+
+func signIn(client *ethclient.Client, fromAddress common.Address, contractAddress common.Address, data []byte, privateKey *ecdsa.PrivateKey) error {
+	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	value := big.NewInt(0) // in wei (0 eth)
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Got gas price: %d\n", gasPrice)
 
 	// 设置调用消息
 	msg := ethereum.CallMsg{
@@ -123,4 +135,6 @@ func main() {
 	}
 	// Status = 1 if transaction succeeded
 	fmt.Printf("tx is confirmed: %v. SignIn sucess. Block number: %v\n", receipt.Status, receipt.BlockNumber)
+
+	return nil
 }
