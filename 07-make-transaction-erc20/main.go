@@ -30,7 +30,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	privateKey, err := crypto.HexToECDSA("b753c223ab20fc9052878217ddeda18c8d1c87735e2ccfc374ca8e9c541c6318")
+	privateKey, err := crypto.HexToECDSA("发送方钱包私钥")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func main() {
 	}
 	fmt.Printf("Got gas price: %d\n", gasPrice)
 
-	toAddress := common.HexToAddress("0x039bf69e125d3abacd8b4404004fcf8d38b53c53")
+	toAddress := common.HexToAddress("接收钱包地址")
 	tokenAddress := common.HexToAddress("0x3F4B6664338F23d2397c953f2AB4Ce8031663f80") //OKB TEST
 
 	// 加载合约ABI
