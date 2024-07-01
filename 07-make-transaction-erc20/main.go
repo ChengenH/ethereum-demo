@@ -4,13 +4,14 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"log"
 	"math/big"
+	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -56,33 +57,37 @@ func main() {
 	toAddress := common.HexToAddress("0x039bf69e125d3abacd8b4404004fcf8d38b53c53")
 	tokenAddress := common.HexToAddress("0x3F4B6664338F23d2397c953f2AB4Ce8031663f80") //OKB TEST
 
-	transferFnSignature := []byte("transfer(address,uint256)")
-	methodID := crypto.Keccak256(transferFnSignature)
-	fmt.Println(hexutil.Encode(methodID))
-
-	paddedAddress := common.LeftPadBytes(toAddress.Bytes(), 32)
-	fmt.Println(hexutil.Encode(paddedAddress))
-
-	amount := new(big.Int)
-	amount.SetString("100000000000000000", 10) // 0.1 tokens
-	paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
-	fmt.Println(hexutil.Encode(paddedAmount))
-
-	var data []byte
-	data = append(data, methodID...)
-	data = append(data, paddedAddress...)
-	data = append(data, paddedAmount...)
-
-	gasLimit, err := client.EstimateGas(context.Background(), ethereum.CallMsg{
-		To:   &toAddress,
-		Data: data,
-	})
+	// 加载合约ABI
+	tokenABI, err := abi.JSON(strings.NewReader(`[{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"type":"function"}]`))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to parse token ABI: %v", err)
 	}
-	fmt.Printf("gasLimit:%v\n", gasLimit) // 23256
-	gasLimit = 660000
-	//tx := types.NewTransaction(nonce, tokenAddress, value, gasLimit, gasPrice, data)
+
+	// 准备调用合约的参数
+	parsedAmount := new(big.Int)
+	parsedAmount, ok = parsedAmount.SetString("100000000000000000", 10)
+	if !ok {
+		log.Fatalf("Invalid amount")
+	}
+
+	// 创建转账调用数据
+	data, err := tokenABI.Pack("transfer", toAddress, parsedAmount)
+	if err != nil {
+		log.Fatalf("Failed to pack transfer  %v", err)
+	}
+
+	// 设置调用消息
+	msg := ethereum.CallMsg{
+		From: fromAddress,
+		To:   &tokenAddress,
+		Data: data,
+	}
+
+	// 估算GasLimit
+	gasLimit, err := client.EstimateGas(context.Background(), msg)
+	if err != nil {
+		log.Fatalf("Failed to estimate gas limit: %v", err)
+	}
 
 	tx := types.NewTx(&types.LegacyTx{
 		Nonce:    nonce,
