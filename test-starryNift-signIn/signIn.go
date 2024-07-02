@@ -18,6 +18,7 @@ import (
 )
 
 // 教学视频：https://www.youtube.com/watch?v=nuivtRUaSw8&list=PLay9kDOVd_x7hbhssw4pTKZHzzc6OG0e_&index=4
+// StarryNift 每日签到脚本
 var (
 	arbitrumTestUrl = "https://arbitrum-sepolia.infura.io/v3/37ef3e9c7aff4830aae77fa3746ccb37"
 	etherTestUrl    = "https://sepolia.infura.io/v3/37ef3e9c7aff4830aae77fa3746ccb37"
